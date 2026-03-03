@@ -48,6 +48,13 @@ void vga_putchar(char c) {
         vga_row++;
     } else if (c == '\r') {
         vga_col = 0;
+    } else if (c == '\b') {
+        if (vga_col > 0) {
+            vga_col--;
+        } else if (vga_row > 0) {
+            vga_row--;
+            vga_col = VGA_WIDTH - 1;
+        }
     } else if (c == '\t') {
         vga_col = (vga_col + 8) & ~7;
     } else {

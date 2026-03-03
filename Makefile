@@ -12,7 +12,7 @@ LDFLAGS  = -nostdlib -T linker.ld
 BUILD    = build
 
 # Kernel sources
-KERNEL_C_SRC = kernel/vga.c kernel/serial.c kernel/idt.c kernel/keyboard.c kernel/kernel.c
+KERNEL_C_SRC = kernel/vga.c kernel/serial.c kernel/string.c kernel/idt.c kernel/keyboard.c kernel/shell.c kernel/kernel.c
 KERNEL_OBJ   = $(BUILD)/kernel/entry.o $(BUILD)/kernel/isr.o $(patsubst %.c,$(BUILD)/%.o,$(KERNEL_C_SRC))
 
 .PHONY: all clean run run-gui
