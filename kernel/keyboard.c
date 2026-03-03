@@ -108,14 +108,24 @@ char keyboard_getchar(void) {
 }
 
 // Serial port IRQ4 handler (COM1 input in -nographic mode)
+static bool last_was_cr = false;
+
 static void serial_handler(uint64_t error_code, uint64_t int_no) {
     (void)error_code;
     (void)int_no;
 
     while (serial_has_data()) {
         char c = serial_getchar();
-        if (c == '\r') c = '\n';
-        kb_buffer_push(c);
+        // Handle \r\n sequences: convert \r to \n, ignore \n after \r
+        if (c == '\r') {
+            last_was_cr = true;
+            kb_buffer_push('\n');
+        } else if (c == '\n' && last_was_cr) {
+            last_was_cr = false;  // Skip \n after \r
+        } else {
+            last_was_cr = false;
+            kb_buffer_push(c);
+        }
     }
 }
 

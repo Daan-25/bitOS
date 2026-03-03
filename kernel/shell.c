@@ -5,6 +5,7 @@
 #include "string.h"
 #include "pmm.h"
 #include "heap.h"
+#include "timer.h"
 
 #define CMD_BUF_SIZE 256
 #define MAX_ARGS     16
@@ -18,6 +19,8 @@ static void cmd_clear(int argc, char **argv);
 static void cmd_echo(int argc, char **argv);
 static void cmd_info(int argc, char **argv);
 static void cmd_meminfo(int argc, char **argv);
+static void cmd_uptime(int argc, char **argv);
+static void cmd_sleep(int argc, char **argv);
 static void cmd_reboot(int argc, char **argv);
 
 typedef struct {
@@ -32,6 +35,8 @@ static shell_cmd_t commands[] = {
     { "echo",    "Print text to screen",      cmd_echo    },
     { "info",    "Show system information",   cmd_info    },
     { "meminfo", "Show memory statistics",    cmd_meminfo },
+    { "uptime",  "Show system uptime",        cmd_uptime  },
+    { "sleep",   "Sleep for N seconds",       cmd_sleep   },
     { "reboot",  "Reboot the system",         cmd_reboot  },
     { NULL, NULL, NULL }
 };
@@ -211,6 +216,70 @@ static void cmd_info(int argc, char **argv) {
     serial_print("  Keyboard: PS/2 + Serial\n");
     serial_print("  Serial:   COM1 (0x3F8)\n");
     serial_print("  Memory:   PMM + VMM + Heap\n\n");
+}
+
+static void cmd_uptime(int argc, char **argv) {
+    (void)argc; (void)argv;
+    char buf[32];
+
+    uint64_t total_secs = timer_get_seconds();
+    uint64_t hours = total_secs / 3600;
+    uint64_t mins  = (total_secs % 3600) / 60;
+    uint64_t secs  = total_secs % 60;
+
+    vga_print("Uptime: ");
+    serial_print("Uptime: ");
+
+    utoa(hours, buf, 10);
+    vga_print(buf); vga_print("h ");
+    serial_print(buf); serial_print("h ");
+
+    utoa(mins, buf, 10);
+    vga_print(buf); vga_print("m ");
+    serial_print(buf); serial_print("m ");
+
+    utoa(secs, buf, 10);
+    vga_print(buf); vga_print("s (");
+    serial_print(buf); serial_print("s (");
+
+    utoa(timer_get_ticks(), buf, 10);
+    vga_print(buf); vga_print(" ticks)\n");
+    serial_print(buf); serial_print(" ticks)\n");
+}
+
+static int simple_atoi(const char *s) {
+    int val = 0;
+    while (*s >= '0' && *s <= '9') {
+        val = val * 10 + (*s - '0');
+        s++;
+    }
+    return val;
+}
+
+static void cmd_sleep(int argc, char **argv) {
+    if (argc < 2) {
+        vga_print("Usage: sleep <seconds>\n");
+        serial_print("Usage: sleep <seconds>\n");
+        return;
+    }
+    int secs = simple_atoi(argv[1]);
+    if (secs <= 0) {
+        vga_print("Invalid number.\n");
+        serial_print("Invalid number.\n");
+        return;
+    }
+
+    char buf[32];
+    vga_print("Sleeping for ");
+    serial_print("Sleeping for ");
+    utoa(secs, buf, 10);
+    vga_print(buf); vga_print(" second(s)...\n");
+    serial_print(buf); serial_print(" second(s)...\n");
+
+    timer_sleep((uint64_t)secs * 1000);
+
+    vga_print("Awake!\n");
+    serial_print("Awake!\n");
 }
 
 static void cmd_reboot(int argc, char **argv) {

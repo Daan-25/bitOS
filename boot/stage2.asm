@@ -12,7 +12,7 @@
 [org 0x7E00]
 
 KERNEL_LOAD_ADDR equ 0x10000     ; Load kernel at 64KB mark
-KERNEL_SECTORS   equ 32          ; Load 32 sectors (16KB) for kernel
+KERNEL_SECTORS   equ 64          ; Load 64 sectors (32KB) for kernel
 
 stage2_start:
     ; Print message in real mode
@@ -46,27 +46,30 @@ stage2_start:
 ; load_kernel - Load kernel sectors from disk using BIOS INT 0x13
 ; =============================================================================
 load_kernel:
-    ; Stage1 is sector 1, Stage2 is sectors 2-5, kernel starts at sector 6
-    mov ah, 0x02                  ; BIOS read sectors
-    mov al, KERNEL_SECTORS        ; Number of sectors
-    mov ch, 0                     ; Cylinder 0
-    mov cl, 6                     ; Start sector (stage1=1, stage2=2-5, kernel=6+)
-    mov dh, 0                     ; Head 0
-    mov dl, [0x7C00 + 510 - 77]  ; Reuse boot_drive from stage 1 memory
-    ; Actually, let's just try drive 0x80 (first hard disk)
+    ; Load kernel in two batches (BIOS INT 0x13 can be limited per call)
+    ; Batch 1: 32 sectors at sector 6 -> 0x1000:0x0000 (= 0x10000)
+    mov ah, 0x02
+    mov al, 32
+    mov ch, 0
+    mov cl, 6                     ; Start sector
+    mov dh, 0
     mov dl, 0x80
-    mov bx, KERNEL_LOAD_ADDR     ; Load address
-    mov es, bx                   ; Segment
-    shr bx, 4                    ; This won't work right... let's fix addressing
+    mov bx, 0x1000
+    mov es, bx
+    xor bx, bx
+    int 0x13
+    jc .disk_error
 
-    ; Reset ES:BX to point to KERNEL_LOAD_ADDR
-    ; 0x10000 = segment 0x1000, offset 0x0000
-    push ax
-    mov ax, 0x1000
-    mov es, ax
-    pop ax
-    xor bx, bx                   ; ES:BX = 0x1000:0x0000 = 0x10000
-
+    ; Batch 2: 32 sectors at sector 38 -> 0x1400:0x0000 (= 0x14000)
+    mov ah, 0x02
+    mov al, 32
+    mov ch, 0
+    mov cl, 38                    ; sector 6 + 32
+    mov dh, 0
+    mov dl, 0x80
+    mov bx, 0x1400
+    mov es, bx
+    xor bx, bx
     int 0x13
     jc .disk_error
     

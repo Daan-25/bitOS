@@ -2,6 +2,7 @@
 #include "serial.h"
 #include "idt.h"
 #include "keyboard.h"
+#include "timer.h"
 #include "pmm.h"
 #include "vmm.h"
 #include "heap.h"
@@ -30,6 +31,9 @@ void kmain(void) {
     // Initialize keyboard
     keyboard_init();
     serial_print("[bitOS] Keyboard driver ready.\n");
+
+    // Initialize timer
+    timer_init();
 
     // Initialize memory management
     pmm_init(DEFAULT_MEMORY);
