@@ -42,3 +42,32 @@ void *memcpy(void *dest, const void *src, size_t n) {
     while (n--) *d++ = *s++;
     return dest;
 }
+
+void utoa(uint64_t value, char *buf, int base) {
+    char tmp[65];
+    int i = 0;
+
+    if (value == 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return;
+    }
+
+    while (value > 0) {
+        uint64_t rem = value % base;
+        tmp[i++] = (rem < 10) ? ('0' + rem) : ('a' + rem - 10);
+        value /= base;
+    }
+
+    int j = 0;
+    while (i > 0) buf[j++] = tmp[--i];
+    buf[j] = '\0';
+}
+
+void itoa(int64_t value, char *buf, int base) {
+    if (value < 0 && base == 10) {
+        *buf++ = '-';
+        value = -value;
+    }
+    utoa((uint64_t)value, buf, base);
+}

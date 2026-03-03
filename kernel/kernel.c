@@ -2,7 +2,12 @@
 #include "serial.h"
 #include "idt.h"
 #include "keyboard.h"
+#include "pmm.h"
+#include "vmm.h"
+#include "heap.h"
 #include "shell.h"
+
+#define DEFAULT_MEMORY (128 * 1024 * 1024)  // Assume 128MB (QEMU default)
 
 void kmain(void) {
     serial_init();
@@ -24,7 +29,12 @@ void kmain(void) {
 
     // Initialize keyboard
     keyboard_init();
-    serial_print("[bitOS] Keyboard driver ready.\n\n");
+    serial_print("[bitOS] Keyboard driver ready.\n");
+
+    // Initialize memory management
+    pmm_init(DEFAULT_MEMORY);
+    vmm_init();
+    heap_init();
 
     // Start shell
     shell_run();

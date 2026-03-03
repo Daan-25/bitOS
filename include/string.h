@@ -10,4 +10,8 @@ char *strcpy(char *dest, const char *src);
 void *memset(void *s, int c, size_t n);
 void *memcpy(void *dest, const void *src, size_t n);
 
+// Number to string helpers
+void itoa(int64_t value, char *buf, int base);
+void utoa(uint64_t value, char *buf, int base);
+
 #endif

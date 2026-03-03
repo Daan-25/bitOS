@@ -3,6 +3,8 @@
 #include "serial.h"
 #include "keyboard.h"
 #include "string.h"
+#include "pmm.h"
+#include "heap.h"
 
 #define CMD_BUF_SIZE 256
 #define MAX_ARGS     16
@@ -15,6 +17,7 @@ static void cmd_help(int argc, char **argv);
 static void cmd_clear(int argc, char **argv);
 static void cmd_echo(int argc, char **argv);
 static void cmd_info(int argc, char **argv);
+static void cmd_meminfo(int argc, char **argv);
 static void cmd_reboot(int argc, char **argv);
 
 typedef struct {
@@ -24,11 +27,12 @@ typedef struct {
 } shell_cmd_t;
 
 static shell_cmd_t commands[] = {
-    { "help",   "Show available commands",   cmd_help   },
-    { "clear",  "Clear the screen",          cmd_clear  },
-    { "echo",   "Print text to screen",      cmd_echo   },
-    { "info",   "Show system information",   cmd_info   },
-    { "reboot", "Reboot the system",         cmd_reboot },
+    { "help",    "Show available commands",   cmd_help    },
+    { "clear",   "Clear the screen",          cmd_clear   },
+    { "echo",    "Print text to screen",      cmd_echo    },
+    { "info",    "Show system information",   cmd_info    },
+    { "meminfo", "Show memory statistics",    cmd_meminfo },
+    { "reboot",  "Reboot the system",         cmd_reboot  },
     { NULL, NULL, NULL }
 };
 
@@ -126,24 +130,87 @@ static void cmd_echo(int argc, char **argv) {
     serial_print("\n");
 }
 
+static void print_size(uint64_t bytes) {
+    char buf[32];
+    if (bytes >= 1024 * 1024) {
+        utoa(bytes / (1024 * 1024), buf, 10);
+        vga_print(buf); vga_print(" MB");
+        serial_print(buf); serial_print(" MB");
+    } else if (bytes >= 1024) {
+        utoa(bytes / 1024, buf, 10);
+        vga_print(buf); vga_print(" KB");
+        serial_print(buf); serial_print(" KB");
+    } else {
+        utoa(bytes, buf, 10);
+        vga_print(buf); vga_print(" B");
+        serial_print(buf); serial_print(" B");
+    }
+}
+
+static void cmd_meminfo(int argc, char **argv) {
+    (void)argc; (void)argv;
+    char buf[32];
+
+    vga_print_color("\n=== Memory Info ===\n", VGA_YELLOW, VGA_BLACK);
+    serial_print("\n=== Memory Info ===\n");
+
+    // Physical memory
+    uint64_t free_pages = pmm_get_free_pages();
+    uint64_t total_pages = pmm_get_total_pages();
+    uint64_t used_pg = total_pages - free_pages;
+
+    vga_print("  Physical: ");
+    serial_print("  Physical: ");
+    print_size(used_pg * PAGE_SIZE);
+    vga_print(" used / ");
+    serial_print(" used / ");
+    print_size(total_pages * PAGE_SIZE);
+    vga_print(" total (");
+    serial_print(" total (");
+    print_size(free_pages * PAGE_SIZE);
+    vga_print(" free)\n");
+    serial_print(" free)\n");
+
+    utoa(free_pages, buf, 10);
+    vga_print("  Pages:    "); vga_print(buf);
+    serial_print("  Pages:    "); serial_print(buf);
+    vga_print(" free / ");
+    serial_print(" free / ");
+    utoa(total_pages, buf, 10);
+    vga_print(buf); vga_print(" total\n");
+    serial_print(buf); serial_print(" total\n");
+
+    // Heap
+    vga_print("  Heap:     ");
+    serial_print("  Heap:     ");
+    print_size(heap_get_used());
+    vga_print(" used / ");
+    serial_print(" used / ");
+    print_size(heap_get_used() + heap_get_free());
+    vga_print(" total\n\n");
+    serial_print(" total\n\n");
+}
+
 static void cmd_info(int argc, char **argv) {
     (void)argc; (void)argv;
 
     vga_print_color("\n=== bitOS System Info ===\n", VGA_YELLOW, VGA_BLACK);
-    vga_print("  OS:       bitOS v0.2\n");
+    vga_print("  OS:       bitOS v0.3\n");
     vga_print("  Arch:     x86_64 (long mode)\n");
     vga_print("  Kernel:   loaded at 0x10000\n");
     vga_print("  Video:    VGA text mode 80x25\n");
     vga_print("  Keyboard: PS/2 + Serial\n");
-    vga_print("  Serial:   COM1 (0x3F8)\n\n");
+    vga_print("  Serial:   COM1 (0x3F8)\n");
+    vga_print("  Memory:   PMM + VMM + Heap\n\n");
 
     serial_print("\n=== bitOS System Info ===\n");
-    serial_print("  OS:       bitOS v0.2\n");
+    serial_print("  OS:       bitOS v0.3\n");
     serial_print("  Arch:     x86_64 (long mode)\n");
     serial_print("  Kernel:   loaded at 0x10000\n");
     serial_print("  Video:    VGA text mode 80x25\n");
     serial_print("  Keyboard: PS/2 + Serial\n");
-    serial_print("  Serial:   COM1 (0x3F8)\n\n");
+    serial_print("  Serial:   COM1 (0x3F8)\n");
+    serial_print("  Memory:   PMM + VMM + Heap\n\n");
 }
 
 static void cmd_reboot(int argc, char **argv) {
