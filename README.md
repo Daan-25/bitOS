@@ -20,7 +20,22 @@ A custom 64-bit operating system built from scratch — including the bootloader
 - **Serial port driver** — COM1 output + input for headless mode
 - **Interrupt system** — full IDT with 256 entries, PIC remapping
 - **PS/2 keyboard driver** — US QWERTY layout, shift & caps lock
-- **Serial input** — type in terminal via `-nographic` mode
+- **Memory management** — physical (bitmap), virtual (page tables), kernel heap (`kmalloc`/`kfree`)
+- **Interactive shell** — command prompt with built-in commands
+
+## Shell Commands
+
+```
+bitos> help
+
+Available commands:
+  help      Show available commands
+  clear     Clear the screen
+  echo      Print text to screen
+  info      Show system information
+  meminfo   Show memory statistics
+  reboot    Reboot the system
+```
 
 ## Boot Flow
 
@@ -31,7 +46,8 @@ BIOS → Stage 1 (16-bit real mode)
          ↓ sets up GDT, page tables, enables paging
        C Kernel (kmain)
          ↓ initializes VGA, serial, IDT, keyboard
-       Interactive echo (type and see output)
+         ↓ initializes PMM, VMM, heap
+       Interactive shell (bitos>)
 ```
 
 ## Building
@@ -67,14 +83,24 @@ bitos/
 │   ├── vga.c             # VGA text mode driver
 │   ├── serial.c          # COM1 serial port driver
 │   ├── idt.c             # Interrupt Descriptor Table + PIC
-│   └── keyboard.c        # PS/2 keyboard + serial input driver
+│   ├── keyboard.c        # PS/2 keyboard + serial input driver
+│   ├── pmm.c             # Physical memory manager (bitmap)
+│   ├── vmm.c             # Virtual memory manager (page tables)
+│   ├── heap.c            # Kernel heap (kmalloc/kfree)
+│   ├── string.c          # String/memory utility functions
+│   └── shell.c           # Interactive shell + commands
 └── include/
     ├── types.h           # stdint-style type definitions
     ├── io.h              # Port I/O helpers (inb/outb)
+    ├── string.h          # String/memory function declarations
     ├── vga.h             # VGA driver interface
     ├── serial.h          # Serial driver interface
     ├── idt.h             # IDT interface
-    └── keyboard.h        # Keyboard driver interface
+    ├── keyboard.h        # Keyboard driver interface
+    ├── pmm.h             # Physical memory manager interface
+    ├── vmm.h             # Virtual memory manager interface
+    ├── heap.h            # Kernel heap interface
+    └── shell.h           # Shell interface
 ```
 
 ## Disk Image Layout
@@ -92,8 +118,8 @@ bitos/
 - [x] VGA text mode + serial output
 - [x] IDT, PIC, interrupt handling
 - [x] PS/2 keyboard driver
-- [ ] Memory management (physical + virtual)
-- [ ] Interactive shell with commands
+- [x] Memory management (PMM + VMM + heap)
+- [x] Interactive shell with commands
 - [ ] Timer (PIT/APIC)
 - [ ] Filesystem (FAT)
 - [ ] Userspace & syscalls
