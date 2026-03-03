@@ -21,6 +21,7 @@ A custom 64-bit operating system built from scratch — including the bootloader
 - **Interrupt system** — full IDT with 256 entries, PIC remapping
 - **PS/2 keyboard driver** — US QWERTY layout, shift & caps lock
 - **Memory management** — physical (bitmap), virtual (page tables), kernel heap (`kmalloc`/`kfree`)
+- **PIT timer** — 100 Hz tick counter, `sleep()`, uptime tracking
 - **Interactive shell** — command prompt with built-in commands
 
 ## Shell Commands
@@ -34,6 +35,8 @@ Available commands:
   echo      Print text to screen
   info      Show system information
   meminfo   Show memory statistics
+  uptime    Show system uptime
+  sleep     Sleep for N seconds
   reboot    Reboot the system
 ```
 
@@ -46,7 +49,7 @@ BIOS → Stage 1 (16-bit real mode)
          ↓ sets up GDT, page tables, enables paging
        C Kernel (kmain)
          ↓ initializes VGA, serial, IDT, keyboard
-         ↓ initializes PMM, VMM, heap
+         ↓ initializes PIT timer, PMM, VMM, heap
        Interactive shell (bitos>)
 ```
 
@@ -84,6 +87,7 @@ bitos/
 │   ├── serial.c          # COM1 serial port driver
 │   ├── idt.c             # Interrupt Descriptor Table + PIC
 │   ├── keyboard.c        # PS/2 keyboard + serial input driver
+│   ├── timer.c           # PIT timer (100 Hz)
 │   ├── pmm.c             # Physical memory manager (bitmap)
 │   ├── vmm.c             # Virtual memory manager (page tables)
 │   ├── heap.c            # Kernel heap (kmalloc/kfree)
@@ -97,6 +101,7 @@ bitos/
     ├── serial.h          # Serial driver interface
     ├── idt.h             # IDT interface
     ├── keyboard.h        # Keyboard driver interface
+    ├── timer.h           # Timer interface
     ├── pmm.h             # Physical memory manager interface
     ├── vmm.h             # Virtual memory manager interface
     ├── heap.h            # Kernel heap interface
@@ -120,7 +125,7 @@ bitos/
 - [x] PS/2 keyboard driver
 - [x] Memory management (PMM + VMM + heap)
 - [x] Interactive shell with commands
-- [ ] Timer (PIT/APIC)
+- [x] PIT timer (100 Hz) with uptime & sleep
 - [ ] Filesystem (FAT)
 - [ ] Userspace & syscalls
 - [ ] Multitasking
