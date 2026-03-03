@@ -12,8 +12,8 @@ LDFLAGS  = -nostdlib -T linker.ld
 BUILD    = build
 
 # Kernel sources
-KERNEL_C_SRC = kernel/vga.c kernel/serial.c kernel/kernel.c
-KERNEL_OBJ   = $(BUILD)/kernel/entry.o $(patsubst %.c,$(BUILD)/%.o,$(KERNEL_C_SRC))
+KERNEL_C_SRC = kernel/vga.c kernel/serial.c kernel/idt.c kernel/keyboard.c kernel/kernel.c
+KERNEL_OBJ   = $(BUILD)/kernel/entry.o $(BUILD)/kernel/isr.o $(patsubst %.c,$(BUILD)/%.o,$(KERNEL_C_SRC))
 
 .PHONY: all clean run run-gui
 
@@ -27,8 +27,11 @@ $(BUILD)/stage1.bin: boot/stage1.asm | $(BUILD)
 $(BUILD)/stage2.bin: boot/stage2.asm | $(BUILD)
 	$(ASM) -f bin $< -o $@
 
-# === Kernel entry (asm) ===
+# === Kernel asm objects ===
 $(BUILD)/kernel/entry.o: kernel/entry.asm | $(BUILD)/kernel
+	$(ASM) -f elf64 $< -o $@
+
+$(BUILD)/kernel/isr.o: kernel/isr.asm | $(BUILD)/kernel
 	$(ASM) -f elf64 $< -o $@
 
 # === Kernel C objects ===
